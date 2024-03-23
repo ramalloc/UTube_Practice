@@ -1,0 +1,739 @@
+-> Here we are taking images from user So we upload those images on third party Storage :- AWS or Cloudinery. But before uploading those 
+    images on cloud we Store them on our server temporarly for utilising those data in case of any connection loss to send the images on 
+    cloud.
+-> To store temporary images on server we make a folder for that which is called :- {temp} which is inside of {public} folder. Now git 
+    cannot push the empty folders on github, So to upload the {temp} folder on server so that temporary images can be stored in the temp 
+    folder in future. Therefore we make file of {.gitkeep} which is empty, It is helpful in tracking these types of Util Folders.
+
+-> Now we will make {.gitignore} and those files which should not be upload on git. In market we habe ..gitignore generator which consists
+    predefined .gitignore files according to the project/Tech Stack, like here we have-{https://mrkandreev.name/snippets/gitignore-generator/}
+    We just need to copy and paste it in .gitignore file and we can add from our side as well.
+
+-> Now we will make .env file
+
+-> Now to organise our file we make src folder, then we make app.js, constants.js, index.js files in src.
+-> After that we will make some folders in src :- 
+    controller - It includes functionalities majorally, db - It consists database connectivity configurations, 
+    middlewares - They are the codes which we want to run in b/w, like checking the request b/w client and server,
+    models, routes, utils - It consists the repeated functions which are used consecutively / again an again in different files. 
+-> When we make project with team then there is high chance that the code can show conflicts because different style of code which creates
+    issue while merging the code on github. So the formatting of code should be same and consistent. Therefore we use {prettier} as library,
+    the formatting can be changed as every project requirements therefore we can use prettier generator tools as well.
+    After installing the prettier we have to include some files manually, First we have to make a file {.prettierrc} in src folder, It is 
+    configuration file of prettier like :- comma, semicolon etc. details. Second file we make is {.prettierignore}, It consists those
+    file names where we don't want to implement the prettier.
+
+
+
+
+----> Database Connection
+-> We will add mongodb url and other env in .env file, we don't need '/' in last of mongodb url.
+-> Now we will add and export our Database name in constants.js file as DB_NAME = "UTubeDB"
+-> There are two ways to connnect databse :- 1st is that we can add database connection code in index.js, so when index.js executed our
+    database connection also executed.
+    2nd method is we make different file for database connection code and we will import that file in index.js.
+-> We need dotenv, mongoose and express, so we install it.
+-> So first we will use mongoose to make connection with mongodb. 
+**-> Whenever we try to communicate with database there is high chance that problems can occurs. Therefore we should wrap it in try-catch
+    or in promises.
+**-> "Our Database is always in other Continent", means it takes time to communicate with database therefore we use asyn-await always.
+
+-- 1st Appraoch --
+-> Here we are writing the database connection code using IIFEs - A JavaScript IIFE (Immediately Invoked Function Expression)
+    is a function that runs the moment it is invoked or called in the JavaScript event loop.
+-> We should always write ';' before IIFE because it is possible that previous doesn't have semicolon which may occurs error.
+-> Then we wil wrap code in async and in try-catch, We have to add DB_NAME also after DB_URL/
+-> Sometimes Programmers implement express in index.js file, They add listeners rigth after database connection.
+
+
+-- 2nd Approach -- 
+-> We make a file in db folder and implement the database connection code there, Here We will make a function and export that.
+-> We are using process.exit() in error handling - Calling process.exit() will force the process to exit as quickly as possible even if 
+    there are still asynchronous operations pending that have not yet completed fully, including I/O operations to process.stdout 
+    and process.stderr. In most situations, it is not actually necessary to call process.exit()explicitly.
+    The Node.js process will exit on its own if there is no additional work pending in the event loop.
+    The process.exitCode property can be set to tell the process which exit code to use when the process exits gracefully.
+-> Production, developement and testing have different databases, So {connectionInstance.connection.host} gives the name of host connected. 
+
+-- Setting Dotenv --
+-> As early as possible in your application, import and configure dotenv. We should add in index.js which loads first on server
+    we should add dotenv first and configure. But dotenv adding method disrupt our consistency of importing because it uses require.
+    So here we have to import it then have to configure it as well, takes path of .env file in configuration.
+-> We can use import dotenv as experimental feature, we have to write some commands in "dev" packagae.json after "nodemon" to load 
+    all dotenv configurations but at this time we have to load it as experimental feature by using command 
+    {dotenv/config --experimental-json-modules}.
+
+
+-- Setting Express --
+-> We initialize the express in app.js and export it. We import app.js in index.js, connectDB is an async function therefore it returns 
+    promise. In index.js after calling connectDB() we get promise so we use then() and catch() for Immediate initialization of express/app
+    listener.
+-> We mainly work in express on request and response. Most used is - req.params which consists the info comes from url, 
+    req.body consists data in forms or json etc, req.cookies used to store or retrieve data in user's browser used by middleware .
+    So we have to install cookie-parser and cors, Whenever we use middlewares we write it's syntax as using express's app 
+    {app.use(_middleware_)}.
+-> After installing of cors and cookie parser we import them in app.js, Now we have to configure them after executing app.
+    We can configure more in cors, it contains some options which gives contains the accessbility options. We can define origin in options
+    and status as well. In origin we set .env as CORS_ORIGIN Which we have to set in .env file, We set CORS_ORIGIN = * means anyone can 
+    access but also we can add vercel, netlify etc. specified as well. and we set {credentails: true}
+-> We can get data from url, json, req-body, direct-form, json-form. So it needs some settings like limitation of incoming json data to 
+    prevent from server crash. Now we can configure json with express, Common options {express.json({limit:"16kb"})}.
+    Before this method of express we needed middlewares like body-parser to accept can configure json data.
+-> Now we have to configure/hide the datas whose are coming from url, Express gives one more direct configuration to encode the url 
+    {express.urlencoded()} it is sufficient but it also contains some option like "extended", "limit" 
+    {express.urlencoded(extended: true, limit: "16kb")} which is used to give objects in objects means helps in nesting of objects.
+-> Another express configuration that we will use is :- static to keep/store file, images, fevicon in public foler as public asset anyone 
+`   can access them. {express.static("public")}
+
+-> Cookie Parser helps in accessing and setting the cookies in user's browser by server, means performing CRUD operation on user's browser's
+    coockies. It also helps in to keep secure coockies in browser by server only. Now we configure the cookieParser in app.js.
+    
+
+
+--> middleware - the function/code which checks the request or response of client or server is called middleware. When an api hit
+    it contains (err, req, res, next), Whenever we used {next} it means that is middleware. {next} is a flag, when middleware code segment
+    completed its tasks, then it forwards {next} flag to the next middleware to implement it's task. If there is no next middleware in
+    code segment then it discard the process or done with the process. The arrangement of middleware is also important.
+
+
+
+-- Database Wrapper --
+-> we will communicate with database again and again in user's, video's controller. So we should make an utility file which contains
+    wrapper. Wrapper takes function as method and peforms its operation.
+-> We make a asyncHandler.js utility file. It contains a higer order funciton which takes a function as parameter and returns function as
+    well. It treats a function as higher order funciton. 
+-> We can implement higher order by two methods using async with try-catch and only Promises.
+-> In try-catch method We take (req, res, next) as parameter, taking {next} because we can use it as middleware in future. Then we will
+    implement try-catch. we handle the error by sending response as error code (if user send err code else we send customised err code )
+    and error message using json.
+-> In promise method we take the function and return it in the form of promise.
+
+
+-- Error Handling --
+-> When we are returning the error in response and we will send this many times. So We don't have any structure or centralize standard to
+    send error. Now we want to standardize the api response and api's error as well which leads to the standardized codebase.
+-> So we have an error class in NodeJs, which contains some functions and constructors We can change them in different extended class.
+    We make a file apiError.js in Utils Folder, We make a class ApiError which is inherited from Error class of NodeJs.
+    We will take the constructor and then we will overwrite the constructor as well. Now whoever use the apiError class they have to 
+    give some data which is defined in constructor.
+
+-- Api Response Handling -- 
+-> We can trace error in NodeJs but for response we are using Express library. So we make a file to streamline the API Response.
+-> We make a file apiResponse.js which consists class of ApiResponse. Whenever we send response we send them through this class/file.
+    We set the default data in constructor that it needs like:- statusCode, message and data. We can overwrite them according to data.
+    We have to set success = statusCode < 400, according to the standard.
+
+--> Now we want that whenever there is an error occurs, the error should go throgh the apiError means we have to write middlewares.
+
+
+
+
+
+<--- Modeling --->
+-> We make user and video model only because they are tightly coupled with each other or dependent.
+-> We used index in username field in user model, because if we want to make a field searchable in optimize way then we should make     
+    the index: true.
+-> We takes references in both models from each other.
+
+-- Video --
+-> Aggregation Pipeline framework makes the mongoose powerful for production. So we have to install this library - mongoose-aggregate-paginate-v2
+-> It is A cursor based custom aggregate pagination library for Mongoose with customizable labels.
+    So we will import, and initialize/use at just before export. In mongoose we make many own middlewares and inject own plugins as well, 
+    aggregate pipeline came after plugins. So we use the aggregator in plugin of mongoose, and after that we can perform aggregate operations
+    on the Schema as well because It has access of all data of that Schema, here we used in videoSchema.plugin(aggregate).
+
+-- User --
+    -- password managing using bcrypt --
+-> Now in user model we used bcrypt, bcrypt - A library helps you to store hash passwords, This library is made on core nodeJs.
+    and bcryptJs is Optimized bcrypt in JavaScript with zero dependencies. Compatible to the C++ bcrypt binding on node.js 
+    and also working in the browser. Here we will use bcrypt.
+
+    -- session managing and data protection using jsonwebtoken -- 
+-> jwt is not human readable, it make through algorithm. It encypts and injects the payloads/data in tokens.  
+-> We can't do direct encryption therefore we need some middleware's hooks of mongoose, One of them is pre hook. We will inject that jwt code in this pre hook.
+    It implement or run some code just before the saving the data for encryption therefore it is called pre.
+-> It take two parameters first is some event(validate, save, remove, updateOne etc) in it to occur, so here we are using for saving the data. 
+    It runs just before saving the data in database.
+    Second parameter is a callback function. But We can't use normal callback function here, becuase in arrow function we don't have access 
+    of {this} means it doesn't know the context or it cannot get access of (user) schema details. These are time taking process therefore 
+    we used async here. Now we have to pass {next} flag to function because it is a  middleware and when function code will get 
+    finished then in last we have to call this {next} to pass the flag ahead to other middleware. 
+
+-> Now there we want that when our details are saving, get the password field and encrypt it and then save it in database, We will do this
+    using bcrypt. We gave two parameters in bcrypt.hash() - what to encrypt and round of hashing. But there is a problem arises that 
+    it may run every time whenever we made changes in any field and saved the changes means it changes the password hash in database again.
+    But we want when there is modificaiton in password then it should save the password in database in hash form. And there are two
+    condition we want to change the password hash when it is new or it is modified.
+    So we have to check that the password is modified or not using isModified() method of mongoose and we pass the field as String
+    which we want to check. If password modified then we will save the password changes else we will not change the password hash.
+-> Now we have to add some methods, Here we will make a method to compare user's input password and the hash saved in database to check
+    the password entered by user is right or not.
+-> So we can inject methods using mongoose, it contains it's own also. But We can make custom methods and inject them using methods.
+    {Schema.methods._method1_} we can add as many custom methods as we want to. we make function of that method which takes password 
+    whenever it runs. We check the password comparision using bcrypt by its method {bcrypt.compare()} which takes user's password and 
+    database password by {this.password} because it has also access of the fileds in database, we make this funciton async. 
+    The compare method return true or false.
+
+
+---> Now we implement JWT, JWt is a bearer token means whoever posses this data can have the access of data.    
+-> JWT need some data to implement/initialization, and we write those data in .env file. First is access_token, in production we generate 
+    complex string to save as access_token. Second is access_token_expiry which we can write as 1d means 1 day. Third is refresh_token,
+    here we also keep long string. Fourth is refresh_token_expiry, it has more days/time as compare to access_token like 10d means 10days.
+-> We store our refresh_token in database and not storing access_token in database. Means we our securing sessions and coockies as well.
+-> We can make methods that generates accessToken and refreshToken with mongoose methods. Both are JWT, usage is different.
+-> jwt has a sign method {jwt.sign()} which generates token, it take parameters - first is payload that should be in objects which contains
+    data/payload like _id, email, userName etc. Now other parameters it takes access_token, and access_token_expiry in object,
+    this function returns token. 
+-> Now we will make method to generate refresh_token as well with same process above. It contains less information as compare to access_token
+    and it's expiry is also more.
+
+
+
+--- File upload using MULTER ---
+-> We can't handle files using express or other tech stack. Morever we don't handle file on our server, We used third party services nad AWS.
+-> File Handling should will not be used in every endpoints therefore we made it in Separate Utility File to reuse them. And whenever we 
+    need that file we used that as middleware("Jaane se pehle mujhse milkar jaana").
+-- cloudinary --
+-> Here we are using Cloudinary as third party service to handle file, We also need some packages in backend - there are two opptions first
+    is express-fileupload and second is Multer, we will use multer here.
+-> So now we will signup on Cloudinary which gives cloud_name, api_key and api_secret which we have to add in .env file but first we have to
+    install Cloudinary and then we will add keys in .env file.
+-> We upload file through multer we cannot upload file using direct Cloudinary, Cloudinary is a service/sdk like aws.
+-> Here we will do two tasks first is we get the file from user using multer and keep that file on our local server temporary then in 
+    second step/task using Cloudinary we get the file from local storage and upload it ono server. We used both task in production grade.
+-> We make a file named Cloudinary.service.js which contains file uploading code. Here our goal is to get the file from server by local path 
+    through file system and upload it on Cloudinary. Also delete that file from local server after uploading the file on Cloudinary.
+-> We import v2 as Cloudinary from Cloudinary then we import "fs" file system of nodeJs to get the path of file. Here in "fs" we are    
+    using "unlink" - If path refers to a symbolic link, then the link is removed without affecting the file or directory to which that link
+    refers. If the path refers to a file path that is not a symbolic link, the file is deleted.
+-> In NodeJs File System files are linked or unlinked, When we delete a file that file got unlinked from file system but the file is saved 
+    there in storage it just unlinked from the "fs".
+-> Now we configured the Cloudinary in cloudinary.service.js, this configuration gives the access to file upload.
+-> We will make a method that takes file path to upload file and deletes or unlink the files after uploading file from file system and 
+    there can be problem in uploading therefore we will try-catch also used async. We use cloudinary upload method and pass filePath to it.
+    We uploaded the file and returned the response to the user then we have to handle catch, We will delete/unlink the file from the file
+    system if file not uploaded on cloudinary to prevent from malicious files on server. We used unlinkSync means this has to be done.
+    then we export uploadCloudinary function.
+
+
+---> Now we will use multer as middleware, we ccan use multer directly but here we are using as middleware and wherever we need file 
+    uploading capabilities then we inject the multer there.
+-> We saw in docs that we can store the file in two storage first is Diskstorage(Storage) and second is Memory Storage (Buffer), Here we 
+    are using Diskstorage to save heavy files.
+-> diskStorage has two properties - destination and filename, both posses a function which consists request from user contains json and 
+    params, files which contains files from user this is the additional parameter which comes from multer, and cb which is callback function.
+    In destination cb takes two parameter - 1st is error handling default is null and 2nd is folder destination which we gives our
+    'public/temp' path.
+    In filename we have file which consists many methods in it like - originalFilename means we save the file with the namw which user gives.
+    Filename is used for naming the file due to saving the file in storage. here we used Date.now() as preSuffix with filename.
+-> we store the multer in upload constant and export it. 
+-> Now we can use this upload method in our routes as parameter to upload that file - 
+    app.post('/profile', upload.single('avatar'), function (req, res, next))
+
+
+
+
+
+--- HTTP ---
+-> HTTP and HTTPs have same technologu but HTTPs have extra layer of security. The data sending in network will get encrypted where https
+    sends data in clear text not encrypted.
+-> URL - Uniform Resource Locator, URI - Uniform Resource Identifier and URN - Uniform Resource name
+-> HTTP header - When we send a http request then we have to send some information with that request which is called metadata.
+    And the metadata is called http header. 
+-> Metadata - It is key-value pair data sent along with request and response. Metadata is used in Catching, Authentication and 
+    State Management (Knowing about the state of user, is user is logged in or guest).
+-- Type Of Headers --
+-> Request Header comes from client, Response Header comes from Server and it should be standardized, Representation Headers - It tells 
+    the data is in which endcoding and in which compression(zip files, Here we sent the data in compressed form because network has a limit)
+    and Palyload Headers - data
+
+-- Most Common Headers --
+1. Accept - It indicates that which form of data is acceptable like - json
+2. User-Agent - It shows the information source who sends request request like - application, browser etc.
+3. Authorization - Bearer___jwt_token_
+4. Content Type - img, pdg, mp4 etc.
+5. Coockie - It is an object {}, which consists key-value pair data like - unique code, time to save user Coockie etc.
+6. Cache-Control - If the data wants to be in network within a given time 
+
+Although We have some headers like - CORS Headers and Security Headers
+
+-- HTTP Methods --
+-> Basic set of operations that can be used to interact with server.
+• GET : retrieve a resource
+• HEAD : No message body (response headers only)
+• OPTIONS: what operations are available
+• TRACE : loopback test ( get same data)
+• DELETE : remove a tesource
+• PUT : replace a de source
+• POST : interact with resource (mostly add)
+• PATCH : change part of a resource
+
+
+-- HTTP Status Code --
+• 1xx Informational
+• 2xx Success
+• 3xx Redirection
+• 4xx Client extor
+• 5xx server error
+
+100 Continue
+102 Processing
+200 Ok
+201 created
+202 accepted
+307 temporary redirect
+308 permanent redirect
+400 Bad request
+401 Unauthorized
+402 Payment required
+404 Not Found
+500 Internal Server Error
+504 Gate way time Out
+
+
+
+
+---- Router and Controller ----
+-> Now we wil Register the User, So will make a file in in controller folder as user.controller.js . In Util we make helper file of an
+    asynHandler wrapper to handle promises and error so that we don't need to use try-catch again and again. So we import asyncHandler in
+    user controller.
+-> Here we will write a function in asyncHandler Wrapper and hold it in a variable registerUser, then we pass a async function in 
+    asyncHandler which is a higer order funciton. Now in response we send status code 200 and a message "ok".
+
+-- Routes --
+-> We made controller but the methods runs when an URL hitted, So we have to setup the routes.
+-> So we make a user.route.js which is a user router file in routes folder. We import Router in it, initialized as router it and export it.  
+
+
+-> So we exported the user controller and user route, now we will import both in app.js we can import in index.js but we want to keep it 
+    clean.
+-> Now we will import user router in index.js, we will import route after the previous configuration of app.js.
+-> Now we will declare the routes before we were using app.get() method because we were writing routes in app.js the router is not in 
+    different file. But in this case user router is in different file therefore to get the router in this file we will use middleware 
+    so we use app.use() method.
+-> Then we make route using router, we use router's method route() which takes the endpoint ("/register"). After that putting {.}  we can
+    access the methods like get, post, put etc. then we pass the user controller (registerUser) in get(), post(registerUser) as argument.
+->  Now the URL form like this - http://localhost:8000/users/register. But we have to define the versions of api in route 
+    , In industry we don't use the route like this - app.use("/users", userRouter), We use this method which is an standardize method - 
+     app.use("/api/v1/users", userRouter).
+
+
+-- User Register --
+-> We should breakdown our the problem in small steps
+1. We should get the user data from the front end.
+2. validation - to check the user data is valid according to the user model or not.
+3. We will check that user us already exists or not using email or username.
+4. Check for images and avatar 
+5. Upload them to cloudinary, get the url and we have to check that data is saved on cloudinary successfully or not.
+6. Now we will make an object because we send the data on mongodb as object. So create entry in DB.
+7. When we send data in DB, DB returns that data and we will send the data to the user by removing the password and refresh_token field.
+8. Check for user creation 
+
+-- 1 --  
+-> We use re.body to get the data from user from form or in json. And then we store those details in an object by destructuring the data.
+-> After successfully raw data fetching from user, But we don't have any option to send files therefore we will use multer middleware here.
+-> Now we will use the multer in user routes, so we will import {upload} from multer middleware. Then We will use {upload} as argument in 
+    user route in post just before user controller {userRegisteration}. 
+-> Now this upload gives us many options to send the data but we select fields, So upload.fields() takes argument as an array of objects
+    So we pass two objects here, one for avatar and second for coverImage. We have to give name of data and maxCount of data in options in
+    object. 
+
+-- 2 --
+-> Now we have to validate the data is empty or not, We will implement if-else and check that. But we have many fields and writing if-else
+    for every field will become very hectic, therefore we wil use this method - In if condition block We take all the data in array. And We 
+    will use some() method.
+    
+    The some() method of Array instances tests whether at least one element in the array passes the test implemented by the provided function.
+    It returns true if, in the array, it finds an element for which the provided function returns true; otherwise it returns false. 
+    It doesn't modify the array.
+    
+    the some() which consists an callback and this callback has access of elements of arrayfunction as {field} then in function block
+    if function returns ture for any element, the function becomes true for all element.
+    If field is present then we trim the filed and check is it empty, then we return true. 
+-> So above we are checking if there is any element which is empty then we implement if block code which is error code.
+-> For error handling we made a utility file apiError so we will use that, import that file and use it with {new} keyword to throw the error.
+    We  will fill the details in apiError() to handle the error with standardize way.
+
+-- 3 --
+-> To check the user is already exists or not we will use {User} from user model, Now the user will call the mongodb on behalf of us as 
+    much times we want.
+-> So we import User from models, then we will use its methods like - findOne() which find the data in fields. It takes field in object as
+    argument. But here we want to check for two fields therefore here we have operators which we used with {$}. Here we use or with
+    respect to an array of objects, objects consists the fields like this - {$or: [{field1}, {field2}]}.
+    Now we hold the reference of the User in a variable as existedUser then we perform if-else operation to send error to the user.
+
+-- 4 --
+-> At now we are getting the data from req.body but in files case we used middlewares in routes, then this middleware also gives some access 
+    of data means it adds more fields in request.
+-> So express gives us the body access of req then multer gives us the access of file of req - {req.files}. It is possible that we have 
+    access of files or not therefore we should do optional chaining. If avatar exists then we will use it's 1st property which gives an 
+    object which gives path of the file on server we should also use it with optional chaining. Then we will hold the req.files in 
+    a variable called avatarLocalPath.
+-> Now we will check the file is present or not, atleast the avatar should be present because we made it required in user model.
+
+-- 5 --
+-> then We will upload the file or avatar on cloudinary for which we have a service uploadCloudinary() we will pass the avatarLocalPath
+    as argument in uploadCloudinary(). Now it can take time so we use await here and hold it in a variable avatar.
+    Same used for coverImage.
+    THen we check that file uploaded or not.
+
+-- 6 -- 
+-> Now we save the data in mongodb using User model method create(), It takes data in Object. Here we pass files url and username in 
+    lowerCase.
+-> Now when we are communicating with database it is possible that an error can rise so therefore we write the whole code in our
+    asyncHandler which deals with the error but it will take time so we have to use await and hold the opeartion in a variable called user.
+
+-- 7 --
+-> Now we want to send the data to the User back in  front end, but we don't want some data to forward in frontend like password and 
+    refresh_token.
+-> So we use User Model method finById() to search a user from its _id, So if user created then we can find that user by the above 
+    user's _id field.
+
+-- 8 --
+-> Now we check for user creation successfully or not, For that we can chain in the above finById() method with select() on user fields.
+    it takes field's names in String to select that fields. But here we want to unselect the fileds so we can use in fileds {-ve} sign.
+-> We will take the user's details with the above unselected fileds in a variable createdUser and return it to the frontend.
+
+-- 9 --
+-> Now we will send the user details to the front end with unselected fields, for this we are using our utility file apiResponse.
+-> We will return the the response with status code and json, the json is consisting the ApiResponse() funciton which takes some details. 
+
+
+--- Postman ---
+-> There is postman collection which has to be share with frontend.
+-> Now we will send the data in postman with form-data, here we are using form data because in JSON we don't have option to send files. 
+-> After sending post request from postman the user has been registered and image has been uploaded in cloudinary. Now we have to unlink
+    the file from file system means we after uploading image successfully we need to remove the image or file from file system.
+    We will do this in cloudinary service after successfully upload.
+-> Now we tried to send data without coverImage, then we can get an undefined error which is the issue of core JavaScript here beccause 
+    we are using optional chaining. We have to check coverImage with classic if-else appraoch, in if bloack we will check for req.files    
+    is present or not && checked for array of coverImage by using Array method isArray(req.files.coverImage)  && we will check for the 
+    length of array of coverImage is > 0 or not.
+-> If the above if block is true then we will set the localPath for coverImage.
+-> After the above process we are able to send the the data without coverImage.
+-> Now we will configure the Postman by a=making collections and adding environment variables.
+
+
+
+
+--- Access Refresh Token, Middleware and cookies ---
+-> We generated two tokens, we can do the work in only access token also. Both are generated with same method, but access token is
+    is short lived and refresh_token is long lived. access_token expires in short term and refresh_token expires in long term because 
+    A user with access token can do the Authorization related task like file - uploading, checking data etc. but if the login session   
+    expires in 15 minutes then the user have to login again, Here refresh_token comes It saves on the user side and on database as well.
+    We validate user rwith access token but they don't need to login again and again, the user just hit an endpoint which checks the user's
+    refresh_token and refresh_token in database is same or not. If tokens are same then the user loginned without entering pass and username
+
+
+---  Login User in user controller ----
+-> By using both tokens we will make loginUser. Now we will have to break the problem into steps.
+1. To get data from req.body and Validation of username or email and password
+2. Checking the the username or email already exists or not
+3. If user found then check the password correct or not 
+4. Generate access_token and refresh_token 
+5. Send the token to the user in secure cookies.
+
+-- 1 --
+-> We get the data from req.body and hold it in an object. We need username or email, one of them to login so we check throgh if-else
+    that username || email is present or not, If both are not present then we throw an error using ApiError()
+
+-- 2 --
+-> Validating User is present or not through User Model method finOne() It takes the field as argument. We want to check for two fields
+    therefore we are using {$or: [{email},{username}]}
+-> Database in different continent therefore we write await and hold it in a variable called user.
+-> If the user if not present we check throgh if() then we throw an error using APiError
+
+-- 3 --
+-> Now we will check the user password matchs with database password or not. We are doing this with bcrypt, We already made a method
+    isPasswordCorrect() to compare user password and Database password. It takes user's password in argument. then we will hold it 
+    in a variable called isPassword and write await because it is checking in database.
+-> Now If password is incorrect then we send an error throgh ApiError.
+
+-- 4 --
+-> Now We will generate access_token and refresh_token, But we are going to do this many times therefore we will keep them in a async method
+    called  generateAccessAndRefreshTokens(). The method takes userId as parameter also it use try-catch, catch handled by ApiError() and try
+    we find the user using User.findById() and writing await also hold the user details in a variable called user. 
+    Then we will generate token one by one and hold them in variables called refreshToken and accessToken.
+-> Now we generated the token and hold it in variables but We have to save the refresh_token in database. So we assign the refreshToken to 
+    the user {user.refreshToken = refreshToken} Then we save this change in database.
+-> But while saving one field in database the other fileds in model also gets initialized like - password. Therefore we pass an parameter
+    in save({validateBeforeSave: false}) means no need to validate before saving also it takes time so we write await.
+-> we return the access_token and refresh_token to the user.
+-> Now We done with the method which creates tokens, But we didn't implement in loginUser therefore we call the above method in loginUser
+    We pass the user._id as argument in method also write await because it may take time. Now we hold the returned token in an object.
+
+-- 5 -- 
+-> The refresh_token field in user is empty because we have didn't save the data in database. here we can do two things 1st is we can update
+    the refreshToken of user here like - user.refreshToken = refreshToken, 2nd method is we can make a database call.
+-> Now we send the tokens in coockies, But before that we got unwanted fields - like password from User.findOne(). So we hold the user 
+    details without password and refreshToken by select method of findById() to send the details in frontend.
+-> Now we want to send cookies and when we send coockies we have to design some options which is an object. Cookies are Bydefault modifiable
+    by anyone in frontend but when we do httpOnly: true, and secure: true Then these cookies are only modifiable from server It cannot  
+    modify in from frontend.
+-> Now we return the response in loginUser method. Status and cookies, We send individual cookies with options. we cand send cookes as many
+    as we want by {.} like - status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
+    then we send a json response throug ApiResponse(), which consists status code, {user: loggedInUser, accessToken, refreshToken}, 
+    message = "user logged in successfully"
+-> sending refresh token if user wants to save the tokens according to their use.
+
+
+
+--- Logout User in User Controller ---
+-> We make a method called logoutUser() managed by asynHandler. Now we breakdown the problem in steps.
+1. Clear cookies
+2. remove refresh_token from user's database as well
+
+-> Now we have idea of operatins but the problem is we don't have access of user. For this we will design our own middleware.
+-> We make a auth.middleware.js file in middleware folder which verifies that user is present or not. We verify on the basis of tokens
+    because when user logged in they gets tokens, this is the true loggin. We verify that the user has correct tokens or not.
+-> If tokens are valid then we inject an object req.user in req.body 
+-> So we will use asynHandler here the function takes (req, res, next) because it is middleware. Now we have access of all cookies here in 
+    request.
+-> We can access the accessToken through cookies but we do optional chaining here because it is possible that there is not access of 
+    accessToken in cookies in the case of mobile application means user is sending custom header. So we will check the req.header() method,
+    the common header we get from the user is "Authorization" as argument in req.header("Authorization"). But the header Authorization
+    header contains : Bearer "token", So we need to replace this {Bearer } with {""} empty string using JavaScript and hold it in a variable
+    called token.
+-> Now if token is not present then throw an error using ApiError(). But if token is present then should check the token using jwt.
+    So we import jwt, using jwt we decoding the details of user from the token. To verify we have jwt.verify() method which takes token and
+    access_token_secret to decode the token. also hold that in a variabel called {decodedToken}.
+    This access_token_secret is the access to decode the token.
+-> After getting decodedToken the details from jwt, We get _id from the decodedToken and search for the _id in mongodb using User model 
+    method findById() and also we write it await and stores in a variabel called {user}.
+-> Now if user is not present then send error throgh ApiError(). 
+-> If user is present, as we have access of request then we inject an object in it by {req.user = user} then we add next() in last.
+-> We mainly use the middlewares in Routes.
+-> We have to wrap the whole text in try-catch
+** Shortcut of vscode to wrap any code in try-catch - Select the code that want to be in try-catch, then after selection write try-catch 
+    and enter, the code will be in try catch.**
+
+-- Adding Route for Login in User Routes --
+-> Make a route in user Route, We made a route for login. Make a secure route section and write route for logout, in post() before login
+    controller add verifyJWT middleware thats it.
+
+-> Now after adding auth middleware verifyJWT in logout route, We get access of req.user in logoutUser contoller now we can implement the 
+    logout funciton by extracting req.user._id.
+-> Now we have to update refresh_token as undefined in mongodb for that we have a method findByIdAndUpdate(), which takes argument 1st is
+    _id here req.user._id and then what will be the updated data in objects for that we have an operator of mongoDB called {$set:} to update
+    the field data like - { $set: { refreshToken: undefined}}. We can also add {new: true}.
+-> Now Clearing cookies in response and for that we need options. We clear the cookies with the help of clearCookie() method, which takes 
+    token and options in argument. And also send json response throgh ApiResponse().
+-> In production grade app if the (res) is not in use then we write it (_).
+
+
+--- Tokens ---
+-> Access token and refresh_token are used only for this purpose so that a user don't need to enter password and email again and again.
+-> access_token is short lived like for 1day, and after 1 day user have to login again using password and email then the user get new 
+    access_token.
+-> But in google purposed this that there should be two tokens 1st is access_token which will saved on user's browser also will be short 
+    lived like - 15 or 30 minutes and 2nd token is sessionStorage also called refresh_token which we save on user side and in database as 
+    well. 
+-> So if user's access token get expired then user get a 401 request, So in frontend we can do that if user is getting 401 request
+    when their access_token expires then they should hit an endpoint and refresh their access token. User is sending refresh_token along 
+    with request then in database a refresh_token is saved so if we found that user then we send new access token with respect to the user.
+-> Now we have to give an endpoint so that frontend user can hit and get the new access_token.
+
+-- Making Endpoint to get new access_token --
+-> So we make a controller with name refreshAccessToken which is handled by asyncHandler(). We need refresh_token for further implementation,
+    we get the refresh_token from request cookies and or from body if user is android also stores in a variable {incomingRefreshToken}.
+    then we didn't get the refresh_token then we send an error throgh ApiError().
+-> Now we have to verify the refresh_token using jwt and stores the decoded token in a variabel called {decodedToken}. Now we find  
+    _id of user using mongoose User.finById() and hold the user info in variabel {user}. Then we check user is present or not if not then 
+    we throw an error.
+-> Now we will match the saved refresh_token and incomingRefreshToken if they are not same then we throw an error. If the refresh_token matched
+    then we generate new access_token and refresh_token with a method which we defined earlier called generateAccessAndRefreshTokens().
+-> Now we make options to send the response and cookies. We send ApiResponse() in json() also sending accessTOken and refreshToken in response.
+    We should wrap the code in try-catch from decodedToken to response, so we will wrap it. And send error through ApiError in Catch block.
+
+-- Setting Endpoint in Routes --
+-> We will make a route for access token regeneration in secured routes section with route name "/refresh-token" 
+
+
+
+-- Subscription Model --
+-> In models folder we make a subscription.models.js file, and create a schema with the help of mongoose. We made two fields 1st is 
+    subscriber and second is 2nd is channel both consists type as "User" model.
+
+
+<--- Update COntrollers for User --->
+-- Password changing controller --
+-> We make a controller named changeCurrentPassword() implementing with asyncHandler(). To change password we need oldPassword and
+    newPassword from request so we will get them from req.body also we need user info to get the their id so therefore Here we are 
+    implementing auth middleware to check user is loggedin or not and the auth middleware gives user in request.So we can get the user 
+    from req.user and perform the password change implementation. 
+-> Now by using User of model we can find the user by their id using mongoose method findById(). We find the user by _id and hold them in 
+    a variable called {user}. 
+-> Now we will match the old password with user's database password by the using of bcrypt custom method that we made to check Password
+    is correct or not which return true or false. We store the result in a variable called {isPassword}. If password do not match then we
+    will return error using ApiError().  
+-> Now if isPassword is correct then we set {user.password = newPassword}, Then we save the changes in database with save method and making 
+    false to validateBeforeSave.
+-> Now We will send the response to user with ApiResponse in json.
+
+-- Get current User Controller --
+-> Now we are making get current user controller to get the current logged in user. So we make a controller named getCurrentUser with 
+    asyncHandler(). No we return the reponse with ApiResponse(), and inject user data from req.user in response data and a message. 
+
+-- Account Details Updating Controller --
+-> Here We make a update controller which update somw details of account like fullName, email etc. So we make controller named 
+    {updateAccountDetails()} with asyncHandler(). 
+-> In production grade web apps we make different controller to update files like - img, this is a better approach. It reduces the 
+    congestion in network because we are not updating the whole user at once.
+-> We extract fullName and email from the request body, and checked for the data if not present then throw error with ApiError().
+-> Now we have to find user in database, so we find with the _idthat we got from req.user and we will use it in User.finByIdAndUpdate()
+    method. it takes arguments 1st is {req.user?._id}, 2nd is a mongoDB Operator here we are using {$set: {}} and 3rd is {new: true} it 
+    is used for getting the updated values in return also we are unselecting password using select() method of mongoDB. Then we save the 
+    whole information in {user} variable.
+-> Now we return using ApiResponse().
+
+-- File Updating Controller --
+-> Now we will upate files of user like avatar, here we need middlewares 1st is multer and second is auth middleware So we will make sure
+    about the middlewares in routing.
+-> Now we make a controller with name updateUserAvatar() with asyncHandler(), Now we get the local path of file from rq.file Using req.file
+    only because we are taking one file but in case of register controller we took req.files. We are getting req.file from middleware
+    multer.
+-> We take the path of file in a variable called {avatarLocalPath = req.file?.path}. Then we check that path is present or not if not then 
+    throw error using ApiError().
+-> If avatarLocalPath is present then upload it in cloudinary using uploadCloudinary() service by passing path into its argument. Then 
+    cloudinary service returns some data we kept in a variable called avatar. Now we check for avatar url if it is not then throw an error
+    with ApiError().
+-> Now we update avatar in database, so using finByIdAndUpdate() we find user by it's id from req.user?._id and set the {avatar: avatar.url}. 
+    also unselect the "-password". And hold it in a variable to return it to the user
+-> Then we send response to the user throgh ApiResponse() in json.
+    
+-- Update Cover Image contoller -- 
+-> We implement above process as same and change the names and update in database.
+
+
+
+--- Subscription Schema Model Theory --- 
+-> This controller returns the profile of user, here we have to get subscriber and count of subscribed also if watching any video or channel
+    if channel subscribed then it should be seen as subscribed.
+-> The image is model of Subscription Schema - E:\Web Developement\Backend\UTube_Backend\Subscription Schema Document Model.png
+-> Whenever a user subscribes a channel a new document created which contains Channel Details and Subscriber Details.
+-> Suppose there are subscribers - a, b, c, d, e and Channels - CAC, HCC, FCC
+-> Now if user {a} subscribes channel CAC then a new document created which will contain Channel and subscriber - {CAC, a} , Then Suppose
+    user {b} also subscribed channel {CAC} then again a new document created which contains - {CAC, b}. 
+-> Now let subscriber {c} also subscribed channel {CAC} then a document created - {CAC, c}, again {c} subscribed channel {HCC} then new 
+    document created - {HCC, c} and again if {c} subscribed {FCC} then document created - {FCC, c}
+-> So now if we want the subscriber of any channel then we search the documents which contains name of channel and count the no. of documents.
+    for example- if we want to know the subscriber of {CAC} then we search the channel name in documents and count the documents above we 
+    have 3 documents which contains channel name {CAC} so the no. ofsubscriber is - 3.
+-> Now ifi we want to know that a user subscribed how many channels then we search for the subscriber name in the documents and the count of
+    documents which contains the subscriber name is the no. of channels which are subscribed by subscriber. for example - how  many channels
+    subscribed by subscriber {c} then we look out for subscriber name {c} in the documents and count the no. of documents and count is 
+    the no. of channels the user subscribed.
+
+
+
+
+--- Mongodb aggregation pipelines ---
+-> We done with the subscriptions model, Now we join the subscription model with user model and this is called left join means join 
+    the information that we are getting from the subscription into the user model and for that we need aggregation pipeline.
+-> Aggregation Pipeline - An aggregation pipeline consists of one or more stages that process documents.
+    - Each stage performs an operation on the input documents. For example, a stage can filter documents, group documents, and calculate  
+    values.
+    - The documents that are output from a stage are passed to the next stage.
+    - An aggregation pipeline can return results for groups of documents. For example, return the total, average, maximum, and minimum values.
+-> We are writing the aggregation pipeline in user controller because we want to get the channel details of the particular username.
+-> Now we make a controller which gives user channel profile named as getUserChannelProfile() with the use of asyncHandler() and export it.
+-> So when we go to any channel profile we go with url means we will also get the data from request params, so we extract the username from
+    req.params in an object. Now we check the username is present or not, also trim the username then if usrname is not present then we
+    throw an error with ApiError().
+-> When we are getting username then we can get the user from database using find() method and then we will perform further operations. But 
+    We don't need to do this long process instead of it we can use aggregation pipeline from aggregate() method which takes pipelines as 
+    objects like this - User.aggregate({}, {},..), also we will write await. The value that comes in return after writing aggregation 
+    pipelines is in array, SO we have to manage the array as well.
+-> Now we hold the aggregation in a variable called channel and write 1st pipeline as {$match} which takes what to find and in what field 
+    like this - {$match: {usrname: username?.toLowerCase()} } also we done the username to lower case.
+-> Now we get the user in the database then we want to see that how many subscriber of that user's channel for that we have a pipeline
+    {$lookup} which takes some fields 1st is {from: } this is the source model from where we want join or get the data so we write the
+    value of from is {from: subscriptions} in lowercase and in plural.
+    2nd is {localField: } which takes _id of user {localField: _id}, 3rd field is {foreignField: } which is used to select and get the field
+    from the source model here is subscriptions model here we write or select user's channel in subscription model as {foreignField: channel} 
+    to get the subscriber of the user. 4th filed is {as: } which is used to save as the document as an output with a name and the return 
+    output is an array.
+-> Above we didn't count the documents of subscriber
+
+-> Now we will get the channels that the particular user subscribed, We do it with writing next pipeline as {$lookup: } So therefore to get
+    the subscribed count of any user we select the subscriber as foreignField. and other fileds will be same and we write the {as: } field
+    {as: subscribedTo}.
+
+-> Now in the above pipelines we are getting the data in the array and both output is separated and further they treated as fileds we want to
+    add those fields in user model for that we have a pipeline {$addFields: }. So 1st field we set {subscribersCount: } now we collected the 
+    subscribers in above pipeline as {$subscribers} if want to calculate them for that we have property {$size: } which gives the size of any
+    field, here field is {$subscribers} so it will be like - {$size: "$subscribers"}. 2nd field we are adding is {channelsSubscriberToCount:}
+    then we calculate the size of "$subscribedTo" field.
+-> from above aggregation we added to fileds in user model which contains subscribers and channelsSubscriberToCount.
+
+-> Now we want if any user go to any channel we want to show the channel subscribed to the user for that we will send true/false to 
+    frontend, Therefore we have to write another pipeline in {$addFields} below.
+-> We made pipeline named {isSubscribed: } here we use condition property {$cond: } we give three parameter in {$cond} 1st is {if: } which 
+    consists condition, 2nd is {then: } and 3rd is {else: }.
+-> In {if: } we want to check that the document contains the _id of user in subscriber field or not. Again we have an operator {$in: }which
+    checks the array and object both. $in takes two parameters first is what to find and 2nd is in which object to find. So we will use $in 
+    $in: [req.user?._id, "$subscribers.subscriber"]. We write {then: true} and {else: false}
+
+-> Next pipeline after addFields is $project is used to give project mmeans it doesn't give the whole value to the demanded user it gives 
+    selected things and the fileds we want to select we write their'r value 1 like this - {fullName: 1,}. We should not give all values 
+    because it may lead network traffic.
+
+-> Now we will return the channel after checking channel exists or not and after handling error.  We send response in ApiResponse()
+
+
+
+--- Aggregation Pipelines to get Watch History  ---
+-> In user model we have watchHistory filed which is a array of objects, so we have to join watch History and Video model with aggregation 
+    pipelines we will add videos _id in the watchHistory array so we will get many the documents of videos.
+-> When we do a lookup from watchHistory in videos but there is owner of videos in video model which contains user details therefore we have
+    to do one more lookup in a single document to get the owner from user. So we will join video and user also in nested lookup. We have to 
+    do join watchHistory and videos and again Immediately we have to join videos and user to get the So that we can get the full document.
+
+-> Now we will make getWatchHistory() controller with asyncHandler(), When we write req.user._id we get string not id of the object, when
+    we use findById() mongoose behind the scene converts it intomongoDB object id. But when we use aggregation pipeline we are not using 
+    mangoose methods then the id will not change itself we have to change the _id into mongoDB object id manually by the use of mongoose 
+    ObjectID() method like this - new mongoose.Types.ObjectID(), and we pass the req.user._id in this method.
+-> Now we find the user with $match operator with _id as mongoose.Types.ObjectID(req.user._id)
+-> Now we have to get watchHistory by $lookup , it takes some fields 1st is from which we set "videos", 2nd is localField: watchHistory,
+    foreignField: _id and as : watchHistory.
+-> Now after the watchHistory lookup we are at the situation where we have many documents of videos in watchHistory. But now we have to 
+    make sub-pipeline to get the owner details in each and every document Immediately after first lookup.
+-> So owe can add further pipeline in a pipeline with a property called {pipeline} and further down we can add as many pipelines as we need.
+    then we write the pipeline as - pipeline: [{}]. 
+-> Now we are in videos model and we will write $lookup pipeline in the array for user model. then we provide from: users, localField:
+    "owner", foreignField: _id and as owner.
+-> Now we don't want to give all info of user into the watchHistory therefore we make further one more pipeline for selected data projection.
+    In $project we are sending fullName, username and avatar only.
+-> Now owner in video become an array which contains some data in objects. But again we are adding one more pipline to structure the data 
+    or extracting the data from owner array. So we will make a new field by $addFields Operator with the same name "owner" so that the 
+    existing field gets overwrite with structured data.
+    So as previous pipeline returning array and we need only first object which is useful to us. so here we use {$first: } operator which 
+    takes field as input from which we get the first data and we use it in owner as -  {owner: { $first: "$owner"}}
+-> Now we will return response throgh ApiResponse in json and return's first object and from that watchHistory -  user[0].watchHistory.
+
+
+-- Setting Routes --
+-Posting-
+-> Now we will set the routes for above after refresh_token controllers.
+-> Made change password route by using post method passing verifyJWT middleware to verify logged in user and changeCurrentPassword controller
+-> Made current user route by using post method passing verifyJWT middleware to verify logged in user and getCurrentUser controller
+
+-Patch-
+-> Made update account route by using patch method passing verifyJWT middleware to verify logged in user and updateAccountDetails controller.
+-> Made update avatar route by using patch method passing first middleware verifyJWT to verify logged in user then second middleware upload
+    which comes from multer used as {upload.single("avatar)} because sending only one file and in last updateUserAvatar controller 
+-> Made update coverImage route by using patch method passing first middleware verifyJWT to verify logged in user then second middleware 
+    upload which comes from multer used as {upload.single("coverImage")} because sending only one file and in last updateCoverImage controller .
+
+-Get-
+-> Below we are getting the value from params so we will use get method write the route with colon to get data from params or url 
+-> Made Getting details of user's channel route and writing username in params because we are calling it in controller as username 
+    ,we write params like this - /:username.
+
+--- Checking routes ---
+-> In logoutUser we are having an error because we are setting refresh_token: undefined, instead of it we have mongoDB operator {$unset: } 
+    we passes 1 with respect to that field which we want to unset. {$unst{refreshToken: 1}}
+
+
+
+
