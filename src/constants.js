@@ -1,4 +1,5 @@
-const DB_NAME = "UTube"
+const mongoUrl = process.env.MONGODB_URL
+const DB_NAME = "UTubePracticeDB"
 const corsOrigin = process.env.COR_ORIGIN
 const port = process.env.PORT || 8000;
 const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET
@@ -13,6 +14,7 @@ const cloudinaryUrl = process.env.CLOUDINARY_URL
 
 
 export {
+    mongoUrl,
     DB_NAME,
     corsOrigin,
     port,
