@@ -11,7 +11,13 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // Getting file path from cloudinary
     const avatarLocalePath = req.files?.avatar[0]?.path
-    const coverImageLocalePath = req.files?.coverImage[0]?.path
+
+    // Getting and checking cover Image
+    let coverImageLocalePath;
+    if (req.file && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalePath = req.files?.coverImage[0]?.path;
+    }
+
     // validation for data present or not
     if (
         [fullName, username, email, password].some((field) =>
@@ -34,13 +40,17 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!avatarLocalePath) {
         throw new ApiError(401, "Avatar file is required...!")
     }
+
     // upload the file into cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalePath)
-    const coverImage = await uploadOnCloudinary(coverImageLocalePath)
+    let coverImage;
+    if (coverImageLocalePath) {
+        coverImage = await uploadOnCloudinary(coverImageLocalePath)
+    }
 
     // checking avatar or coverImage uploaded on cloudinary or not
     if (!avatar) {
-        throw new ApiError(401, "Avatar file is required...!")
+        throw new ApiError(401, "Avatar file didn't uploaded on cloud...!")
     }
 
     // create user object to send and to save data in DB

@@ -191,7 +191,7 @@
 
 
 
---- File upload using MULTER ---
+--- File upload using MULTER and Cloudinary ---
 -> We can't handle files using express or other tech stack. Morever we don't handle file on our server, We used third party services nad AWS.
 -> File Handling should will not be used in every endpoints therefore we made it in Separate Utility File to reuse them. And whenever we 
     need that file we used that as middleware("Jaane se pehle mujhse milkar jaana").
