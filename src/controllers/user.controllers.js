@@ -32,7 +32,9 @@ const registerUser = asyncHandler(async (req, res) => {
     })
     if (existedUser) {
         fs.unlinkSync(avatarLocalePath)
-        fs.unlinkSync(coverImageLocalePath)
+        if (coverImageLocalePath) {
+            fs.unlinkSync(coverImageLocalePath)
+        }
         throw new ApiError(408, "User with username or email already exist...!")
     }
 
@@ -80,4 +82,62 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser }
+
+// User Login
+const loginUser = asyncHandler(async (req, res) => {
+    // Getting Data
+    const { username, email, password } = req.body
+
+    // Validating username or email
+    if (!(username || email)) {
+        throw new ApiError(403, "username or email required...");
+    }
+
+
+    // Checking the user present or not in database
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+
+    // checking and throwing error if user doesn't exists 
+    if (!user) {
+        throw new ApiError(402, "User doesn't exists...");
+    }
+
+    // Comparing Password and sending error
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    // Checking password is corrector not
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid Password...!");
+    }
+
+
+    // Generating Tokens for the user
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    // Holding the details of user without password and refreshToken
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    // Setting the cookie options so that it cannot be modified in frontend
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    // Returning response
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, accessToken, refreshToken
+                },
+                "User logged In Successfully..."
+            )
+        )
+})
+export { registerUser, loginUser }
