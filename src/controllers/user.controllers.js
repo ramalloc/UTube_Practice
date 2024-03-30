@@ -5,6 +5,22 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import fs from 'fs'
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findOne(userId);
+
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
+    } catch (error) {
+        throw new ApiError(500, "Unable to generate tokens...!")
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     // Get User Details from Front end
     const { username, email, password, fullName } = req.body
@@ -82,62 +98,82 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
-
-// User Login
 const loginUser = asyncHandler(async (req, res) => {
-    // Getting Data
-    const { username, email, password } = req.body
+    const { username, email, password } = req.body;
 
-    // Validating username or email
-    if (!(username || email)) {
-        throw new ApiError(403, "username or email required...");
+    if (!username && !email) {
+        throw new ApiError(401, "username or email is required...!");
     }
 
-
-    // Checking the user present or not in database
     const user = await User.findOne({
         $or: [{ username }, { email }]
     })
 
-    // checking and throwing error if user doesn't exists 
     if (!user) {
-        throw new ApiError(402, "User doesn't exists...");
+        throw new ApiError(403, "user doesn't exist...!")
     }
 
-    // Comparing Password and sending error
-    const isPasswordValid = await user.isPasswordCorrect(password);
-
-    // Checking password is corrector not
-    if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid Password...!");
+    if (!password) {
+        throw new ApiError(402, "password is required...!");
     }
 
+    const isPassword = await user.isPasswordCorrect(password);
+    if (!isPassword) {
+        throw new ApiError(400, "password is incorrect...!")
+    }
 
-    // Generating Tokens for the user
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    // Holding the details of user without password and refreshToken
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    );
 
-    // Setting the cookie options so that it cannot be modified in frontend
-    const options = {
+    const cookieOptions = {
         httpOnly: true,
         secure: true
     }
 
-    // Returning response
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
         .json(
-            new ApiResponse(
-                200,
-                {
-                    user: loggedInUser, accessToken, refreshToken
-                },
-                "User logged In Successfully..."
+            new ApiResponse(201, {
+                user: loggedInUser,
+                accessToken,
+                refreshToken
+            },
+                "User logged in successfully..."
             )
         )
 })
-export { registerUser, loginUser }
+
+const logoutUser = asyncHandler(async (req, res) => {
+
+    await User.findByIdAndUpdate(req.user?._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true
+        }
+    );
+    
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true
+    }
+
+    res
+    .status(200)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .json(
+        new ApiResponse(200, {}, "User logged out successfully...")
+    )
+
+})
+
+export { registerUser, loginUser, logoutUser }
