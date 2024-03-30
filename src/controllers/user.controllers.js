@@ -5,6 +5,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import fs from 'fs'
 
+
 const generateAccessAndRefreshToken = async (userId) => {
     try {
         const user = await User.findOne(userId);
@@ -29,9 +30,9 @@ const registerUser = asyncHandler(async (req, res) => {
     const avatarLocalePath = req.files?.avatar[0]?.path
 
     // Getting and checking cover Image
-    let coverImageLocalePath;
-    if (req.file && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalePath = req.files?.coverImage[0]?.path;
+    let coverImageLocalePath = "";
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalePath = req.files.coverImage[0].path
     }
 
     // validation for data present or not
@@ -47,9 +48,9 @@ const registerUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
     if (existedUser) {
-        fs.unlinkSync(avatarLocalePath)
+        fs.unlinkSync(avatarLocalePath);
         if (coverImageLocalePath) {
-            fs.unlinkSync(coverImageLocalePath)
+            fs.unlinkSync(coverImageLocalePath);
         }
         throw new ApiError(408, "User with username or email already exist...!")
     }
@@ -101,7 +102,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
 
-    if (!username && !email) {
+    if (!(username || email)) {
         throw new ApiError(401, "username or email is required...!");
     }
 
@@ -160,19 +161,19 @@ const logoutUser = asyncHandler(async (req, res) => {
             new: true
         }
     );
-    
+
     const cookieOptions = {
         httpOnly: true,
         secure: true
     }
 
     res
-    .status(200)
-    .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
-    .json(
-        new ApiResponse(200, {}, "User logged out successfully...")
-    )
+        .status(200)
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
+        .json(
+            new ApiResponse(200, {}, "User logged out successfully...")
+        )
 
 })
 
