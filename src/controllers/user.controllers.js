@@ -3,20 +3,20 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import jwt from "jsonwebtoken"
 import fs from 'fs'
-
+import { refreshTokenSecret } from "../constants.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
-        const user = await User.findOne(userId);
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
 
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
 
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
-
-        return { accessToken, refreshToken };
+        return { accessToken, refreshToken }
     } catch (error) {
         throw new ApiError(500, "Unable to generate tokens...!")
     }
@@ -28,12 +28,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // Getting file path from cloudinary
     const avatarLocalePath = req.files?.avatar[0]?.path
+    console.log(avatarLocalePath);
 
     // Getting and checking cover Image
-    let coverImageLocalePath = "";
+    // console.log(req.files);
+    let coverImageLocalePath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalePath = req.files.coverImage[0].path
+        coverImageLocalePath = req.files?.coverImage[0]?.path;
     }
+    console.log(coverImageLocalePath);
 
     // validation for data present or not
     if (
@@ -48,9 +51,9 @@ const registerUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
     if (existedUser) {
-        fs.unlinkSync(avatarLocalePath);
+        fs.unlinkSync(avatarLocalePath)
         if (coverImageLocalePath) {
-            fs.unlinkSync(coverImageLocalePath);
+            fs.unlinkSync(coverImageLocalePath)
         }
         throw new ApiError(408, "User with username or email already exist...!")
     }
@@ -129,20 +132,20 @@ const loginUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     );
 
-    const cookieOptions = {
+    const options = {
         httpOnly: true,
         secure: true
     }
 
+    console.log("refreshToken : ", refreshToken, "\n accessToken : ", accessToken);
+
     return res
         .status(200)
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", refreshToken, cookieOptions)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(201, {
-                user: loggedInUser,
-                accessToken,
-                refreshToken
+                user: loggedInUser, accessToken, refreshToken
             },
                 "User logged in successfully..."
             )
@@ -177,4 +180,47 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser, loginUser, logoutUser }
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken
+        || req.body.refreshToken
+        || req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!incomingRefreshToken) {
+        throw new ApiError(402, "Unauthorized Access...!");
+    }
+    try {
+        const decodedRefreshToken = jwt.verify(incomingRefreshToken, refreshTokenSecret);
+
+        const user = await User.findById(decodedRefreshToken?._id)
+
+        if (!user) {
+            throw new ApiError(401, "Invalid refresh Token...!")
+        }
+
+        if (incomingRefreshToken !== user?.refreshToken) {
+            throw new ApiError(400, "refresh Token is expired or used...!");
+        }
+
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true
+        }
+
+        res.status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", refreshToken, cookieOptions)
+            .json(
+                new ApiResponse(
+                    201,
+                    { accessToken, refreshToken },
+                    "Access and Refresh Token refreshed..."
+                )
+            )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh Token...!")
+    }
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken }
