@@ -28,7 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // Getting file path from cloudinary
     const avatarLocalePath = req.files?.avatar[0]?.path
-    console.log(avatarLocalePath);
+    // console.log(avatarLocalePath);
 
     // Getting and checking cover Image
     // console.log(req.files);
@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalePath = req.files?.coverImage[0]?.path;
     }
-    console.log(coverImageLocalePath);
+    // console.log(coverImageLocalePath);
 
     // validation for data present or not
     if (
@@ -50,6 +50,12 @@ const registerUser = asyncHandler(async (req, res) => {
     const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
+
+    // Checking files is present or not
+    if (!avatarLocalePath) {
+        throw new ApiError(401, "Avatar file is required...!")
+    }
+
     if (existedUser) {
         fs.unlinkSync(avatarLocalePath)
         if (coverImageLocalePath) {
@@ -58,10 +64,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(408, "User with username or email already exist...!")
     }
 
-    // Checking files is present or not
-    if (!avatarLocalePath) {
-        throw new ApiError(401, "Avatar file is required...!")
-    }
+    
 
     // upload the file into cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalePath)
@@ -72,7 +75,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // checking avatar or coverImage uploaded on cloudinary or not
     if (!avatar) {
-        throw new ApiError(401, "Avatar file didn't uploaded on cloud...!")
+        throw new ApiError(401, "Avatar file didn't upload on cloud...!")
     }
 
     // create user object to send and to save data in DB
@@ -137,7 +140,7 @@ const loginUser = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    console.log("refreshToken : ", refreshToken, "\n accessToken : ", accessToken);
+    // console.log("refreshToken : ", refreshToken, "\n accessToken : ", accessToken);
 
     return res
         .status(200)
@@ -181,7 +184,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken
+    const incomingRefreshToken = req.cookies?.refreshToken
         || req.body.refreshToken
         || req.header("Authorization")?.replace("Bearer ", "");
 
@@ -197,7 +200,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Invalid refresh Token...!")
         }
 
-        if (incomingRefreshToken !== user?.refreshToken) {
+        if (incomingRefreshToken !== user.refreshToken) {
             throw new ApiError(400, "refresh Token is expired or used...!");
         }
 
