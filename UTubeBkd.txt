@@ -621,8 +621,8 @@ Although We have some headers like - CORS Headers and Security Headers
 -> So now if we want the subscriber of any channel then we search the documents which contains name of channel and count the no. of documents.
     for example- if we want to know the subscriber of {CAC} then we search the channel name in documents and count the documents above we 
     have 3 documents which contains channel name {CAC} so the no. ofsubscriber is - 3.
--> Now ifi we want to know that a user subscribed how many channels then we search for the subscriber name in the documents and the count of
-    documents which contains the subscriber name is the no. of channels which are subscribed by subscriber. for example - how  many channels
+-> Now if we want to know that a user subscribed how many channels then we search for the subscriber name in the documents and the count of
+    documents which contains the subscriber name is the no. of channels which are subscribed by user. for example - how  many channels
     subscribed by subscriber {c} then we look out for subscriber name {c} in the documents and count the no. of documents and count is 
     the no. of channels the user subscribed.
 
