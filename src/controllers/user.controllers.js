@@ -6,6 +6,8 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import jwt from "jsonwebtoken"
 import fs from 'fs'
 import { refreshTokenSecret } from "../constants.js";
+import mongoose from "mongoose";
+import { response } from "express";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -403,13 +405,13 @@ const getChannelProfile = asyncHandler(async (req, res) => {
                         },
                         isSubscribed: {
                             $cond: {
-                                if: {$in: [req.user?._id, "$userSubscribers.subscriber"]},
+                                if: { $in: [req.user?._id, "$userSubscribers.subscriber"] },
                                 then: true,
                                 else: false
 
                             }
                         }
-    
+
                     }
                 },
                 {
@@ -422,15 +424,15 @@ const getChannelProfile = asyncHandler(async (req, res) => {
                         isSubscribed: 1
                     }
                 }
-    
+
             ]
         )
-    
-        if(!channel?.length){
+
+        if (!channel?.length) {
             throw new ApiError(401, "Channel doesn't exist...!")
         }
-    
-        return res  
+
+        return res
             .status(200)
             .json(
                 new ApiResponse(201, channel[0], "Channel fetched successfully...")
@@ -441,7 +443,64 @@ const getChannelProfile = asyncHandler(async (req, res) => {
 })
 
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+    try {
+        const user = User.aggregate(
+            [
+                {
+                    $match: {
+                        _id: mongoose.Types.ObjectId(req.user?._id)
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "videos",
+                        localField: "watchHistory",
+                        foreignField: "_id",
+                        as: "userWatchHistory",
+                        pipeline: [
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "owner",
+                                    foreignField: "_id",
+                                    as: videoOwner,
+                                    pipeline: [
+                                        {
+                                            $project: {
+                                                fullName: 1,
+                                                username: 1,
+                                                avatar: 1
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }, 
+                {
+                    $addFields: {
+                        owner: {
+                            $first: "$videoOwner"
+                        }
+                    }
+                }
+            ]
+        )
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(201, user[0].watchHistory, "Watch History fetched successfully...")
+            )
+    } catch (error) {
+        throw new ApiError(404, "Watch History not found...!")
+    }
+})
+
+
 export {
     registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails,
-    UpdateAvatar, updateCoverImage, getChannelProfile
+    UpdateAvatar, updateCoverImage, getChannelProfile, getWatchHistory
 }
