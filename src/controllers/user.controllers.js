@@ -445,11 +445,13 @@ const getChannelProfile = asyncHandler(async (req, res) => {
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     try {
-        const user = User.aggregate(
+        console.log(req.user._id);
+        console.log(new mongoose.Types.ObjectId(req.user?._id));
+        const user = await User.aggregate(
             [
                 {
                     $match: {
-                        _id: mongoose.Types.ObjectId(req.user?._id)
+                        _id: new mongoose.Types.ObjectId(req.user?._id)
                     }
                 },
                 {
@@ -460,11 +462,12 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                         as: "userWatchHistory",
                         pipeline: [
                             {
+                                // Getting Owner details from User 
                                 $lookup: {
                                     from: "users",
                                     localField: "owner",
                                     foreignField: "_id",
-                                    as: videoOwner,
+                                    as: "videoOwner",
                                     pipeline: [
                                         {
                                             $project: {
@@ -475,27 +478,29 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                $addFields: {
+                                    owner: {
+                                        $first: "$videoOwner"
+                                    }
+                                }
                             }
+
                         ]
                     }
-                }, 
-                {
-                    $addFields: {
-                        owner: {
-                            $first: "$videoOwner"
-                        }
-                    }
                 }
+
             ]
         )
 
         return res
             .status(200)
             .json(
-                new ApiResponse(201, user[0].watchHistory, "Watch History fetched successfully...")
+                new ApiResponse(201, user[0].userWatchHistory, "Watch History fetched successfully...")
             )
     } catch (error) {
-        throw new ApiError(404, "Watch History not found...!")
+        throw new ApiError(404, error?.message || "Watch History not found...!")
     }
 })
 
