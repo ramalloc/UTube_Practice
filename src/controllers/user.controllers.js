@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken"
 import fs from 'fs'
 import { refreshTokenSecret } from "../constants.js";
 import mongoose from "mongoose";
-import { response } from "express";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -113,15 +112,15 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!(username || email)) {
         throw new ApiError(401, "username or email is required...!");
     }
-
+    
     const user = await User.findOne({
         $or: [{ username }, { email }]
     })
-
+    
     if (!user) {
         throw new ApiError(403, "user doesn't exist...!")
     }
-
+    
     if (!password) {
         throw new ApiError(402, "password is required...!");
     }
@@ -133,9 +132,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
+    console.log(user);
     const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
+    console.log(loggedInUser);
 
     const options = {
         httpOnly: true,
@@ -236,8 +237,8 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     }
 
     try {
-        const user = await User.findById(req.user?._conditions._id);
-        console.log(req.user._conditions._id);
+        const user = await User.findById(req.user?._id);
+        console.log(req.user._id);
         console.log(user);
         const isPassword = await user.isPasswordCorrect(oldPassword);
         if (!isPassword) {
@@ -284,7 +285,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
                     fullName,
                     username,
                     email
-                },
+                }
             },
             { new: true }
         ).select("-password -refreshToken")
