@@ -132,11 +132,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    console.log(user);
+    // console.log(user);
     const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
-    console.log(loggedInUser);
+    // console.log(loggedInUser);
 
     const options = {
         httpOnly: true,
@@ -384,7 +384,7 @@ const getChannelProfile = asyncHandler(async (req, res) => {
                     $lookup: {
                         from: "subscriptions",
                         localField: "_id",
-                        foreignField: "channelSubscribedByUser",
+                        foreignField: "channel",
                         as: "userSubscribers"
                     }
                 },
