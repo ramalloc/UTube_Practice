@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs'
 import { cloudinaryApiKey, cloudinaryApiSecret, cloudinaryCloudName } from '../constants.js';
+import { ApiError } from './ApiError.js';
 
 
 
@@ -30,4 +31,17 @@ const uploadOnCloudinary = async (localeFilePath) => {
     }
 }
 
-export { uploadOnCloudinary }
+const deleteFromCloudinary = async (resourceId) => {
+    try {
+        if (!resourceId) {
+            throw new ApiError(401, "Resource File is not present..!")
+            return null
+        }
+        const uploadedResource = await cloudinary.uploader.destroy(resourceId);
+        return uploadedResource;
+    } catch (error) {
+        throw new ApiError(500, "Could not delete the file...!")
+    }
+}
+
+export { uploadOnCloudinary, deleteFromCloudinary }
