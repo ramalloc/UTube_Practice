@@ -14,14 +14,18 @@ const videoSchema = new Schema({
         type: String,
         required: true
     },
-    thumbnail: {
+    videoFileId: {
         type: String,
-        required: true
-    },
-    videoFile: {
+        required: true,
+      },
+      thumbnail: {
         type: String,
-        required: true
-    },
+        required: true,
+      },
+      thumbnailId: {
+        type: String,
+        required: true,
+      },
     duration: {
         type: String,
         required: true

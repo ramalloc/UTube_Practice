@@ -26,7 +26,7 @@ router.route("/delete-video/:videoId").post(verifyJWT, deleteVideo);
 
 router.route("/update-video-details/:videoId").patch(verifyJWT, updateVideoDetails);
 
-router.route("/update-video").patch(verifyJWT, upload.single("video"), updateVideoFile)
+router.route("/update-video/:videoId").patch(verifyJWT, upload.single("video"), updateVideoFile);
 
 
 export default router
