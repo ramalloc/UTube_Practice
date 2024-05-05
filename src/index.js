@@ -19,7 +19,7 @@ connectDB()
     })
 })
 .catch((err) => {
-    console.log("Database connection failed in index...!");
+    console.log(err?.message || "Database connection failed in index...!");
 })
 
 
@@ -41,11 +41,14 @@ connectDB()
 
 /*
 import mongoose from 'mongoose'
+import dotenv from 'dotenv'
 import express from 'express'
 const app = express();
 
-const port = process.env.PORT || 4000
-
+const port = process.env.PORT || 8000
+dotenv.config({
+    path: './.env'
+})
 ; (async () => {
     try {
         await mongoose.connect(`${process.env.MONGODB_URL}/${DB_NAME}`)
